@@ -74,11 +74,11 @@ results_CV <- foreach(i = 1:10) %dopar% {
     
     prediction <- predict(model, testing)
     prediction <- prediction$predictions
-    actual <- testing$Label
+    actual <- testing$Class
     rm(training)
     rm(testing)
     rm(model)
-    data <- cbind(prediction, actual)
+    data <- data.frame(prediction, actual)
     rm(prediction)
     rm(actual)
     myRes <- rbind(myRes, data)
@@ -96,6 +96,12 @@ results_CV <- foreach(i = 1:10) %dopar% {
   
 }
 ##############################
+for (i in 1:10){
+  data <- results_CV[[i]]
+  write.csv(data, file = paste0("Model_Epitode_CV_Result_", i, ".csv"))
+}
+
+#################################
 
 
 
@@ -138,8 +144,36 @@ for (i in 1:10){
 
 
 
+library(ranger)
+library(parallel)
+library(doSNOW)
+cl <- makeCluster(24)
+registerDoSNOW(cl)
+importance <- list(10)
+importance <- foreach(i = 1:10) %dopar% {
+  in_train <- caret::createDataPartition(df$Class, p = 0.80, list = FALSE)
+  train <- df[in_train, ]
+  test <- df[-in_train, ]
+  rm(in_train)
+  rm(test)
+  fit <- ranger::ranger(Class ~., data = train, write.forest  = TRUE,
+                        save.memory = TRUE, importance = "impurity")
+  result <- fit$variable.importance
+  rm(fit)
+  rm(train)
+ 
+  importance[[i]] <- result
+  
+}
 
-
+result_importance <- data.frame(importance)
+mean_Importance <- apply(result_importance, MARGIN = 1, FUN = mean)
+sd_Importance <- apply(result_importance, MARGIN = 1, FUN = sd)
+mean_Importance <- data.frame(round(mean_Importance, digits = 2))
+sd_Importance <- data.frame(round(sd_Importance, digits = 2))
+feature_importance <- cbind(mean_Importance, sd_Importance)
+feature_importance <- data.frame(feature_importance)
+colnames(feature_importance) <- c("Overall", "sd")
 
 
 
