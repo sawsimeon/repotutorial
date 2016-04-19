@@ -175,10 +175,21 @@ feature_importance <- cbind(mean_Importance, sd_Importance)
 feature_importance <- data.frame(feature_importance)
 colnames(feature_importance) <- c("Overall", "sd")
 
+df1 <- cbind(descriptors = rownames(feature_importance), feature_importance)
+feature_Importance <- cbind(df1, feature_importance)
+range <- order(df1$Overall, decreasing = TRUE)
+plot_data <- df1[range, ]
 
+df1$descriptors <- factor(df1$descriptors, levels = df1[order(df1$Overall), "descriptors"])
+plot_data <- head(plot_data, 20)
+plot_data$descriptors <- factor(plot_data$descriptors, levels = plot_data[order(plot_data$Overall), "descriptors"])
 
-
-
+plot_df <- ggplot(plot_data, aes(x= Overall, y = descriptors)) +  theme(axis.title.x=element_text(size=20,face="bold"),
+                                                                                plot.title = element_text(size=20, face="bold")) +
+  geom_point(colour = "#F8766D", size = 4, alpha = 0.5) +
+  geom_point(size = 4, colour = "black") +
+  geom_errorbarh(data = plot_data, aes(xmin = Overall - sd, xmax = Overall + sd)) +
+  ggtitle(" ") + xlab("Gini index") + ylab("") + theme_bw() 
 
 
 
